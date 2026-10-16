@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title>Marker Maker</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.20.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.20.0/mapbox-gl.css" rel="stylesheet">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
+</head>
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: "Open Sans";
+    }
+
+    #map {position: absolute; top: 0; bottom: 0; width: 100%;}
+
+    #toggle-add {
+        
+        z-index: 10;
+        margin: 10px;
+    }
+
+    #add-form {
+        position: absolute;
+        z-index: 10;
+        margin-top: 10px;
+        margin-left: 10px;
+        margin-bottom: 10px;
+        padding: 10px;
+        padding-inline: 30px;
+        width: 300px;
+        height: 90%;
+        background-color: white;
+        color: black;
+        resize: both;
+        overflow: auto;
+        border-radius: 15px;
+        background-color: #d8ebf6;
+    }
+
+    #marker-panel {
+        position: fixed;
+        justify-content: center;
+        bottom: 0;
+        right: 0;
+        margin: 10px;
+        margin-bottom: 30px;
+        z-index: 11;
+        padding: 10px;
+        width: 70%;
+        height: 25%;
+        background-color: white;
+        color: black;
+        overflow: auto;
+        resize: both;
+        direction: rtl;
+        border-radius: 15px;
+        background-color: #d8ebf6;
+    }
+
+    #Description {
+        height: 200px;
+        width: 100%;
+        resize: none;
+    }
+
+    #type-box {
+        border: 1px solid black;
+        height: 100px;
+        background-color: white;
+        border-radius: 5px;
+    }
+
+    table {
+        border: 1px solid black;
+        width: 100%;
+        background-color: white;
+    }
+    th, td {
+        border: 1px solid black;
+        background-color: white;
+    }
+</style>
+
+<body>
+    
+    <div>
+        <div id="map"></div>
+
+        <div id="add-form">
+
+            <button id="toggle-add">
+                <p id="toggle-text">
+                    Add Markers: OFF
+                </p>
+            </button>
+
+            <h1>
+                New Point Marker Form
+            </h1>
+            
+            <p>
+                <label for='Name'>Name: </label> 
+                <input type='text' id='Name' name='Name' placeholder='Enter location name' required>
+            </p>
+            <p>
+                <label for='Lng'>Lng: </label> 
+                    <input type='text' id='Lng' name='Lng' placeholder='Enter Longitude' required>
+            </p>
+            <p>
+                    <label for='Lat'>Lat: </label> 
+                    <input type='text' id='Lat' name='Lat' placeholder='Enter Latitude' required>
+            </p>
+
+            <div id="type-box">
+                <ul id="color-select">
+                    <li>
+                        <label for='Type'>Red</label> 
+                        <input type='checkbox' id='Red' name='Red' value="red">
+                    </li>
+                    <li>
+                        <label for='Type'>Green</label> 
+                        <input type='checkbox' id='Green' name='Green' value="green">
+                    </li>
+                    <li>
+                        <label for='Type'>Blue</label> 
+                        <input type='checkbox' id='Blue' name='Blue' value="blue">
+                    </li>
+                </ul>
+            </div>
+
+            <p>
+                <label for='Description'>Description: </label> 
+                <br>
+                <textarea id='Description' name='Description' placeholder='Enter description here'></textarea>
+            </p>
+
+            <button id="add-marker">
+                Add Marker
+            </button>
+        </div>
+
+        
+        <div id="marker-panel">
+            <div style="direction: ltr;">
+                <h1 style="direction: ltr;">
+                    Saved Markers
+                </h1>
+
+                <button>Export Data</button>
+
+                <label for='Zoom_control'>Zoom Level: </label> 
+                <input type='text' id='zoom-control' name='Zoom_control' placeholder='Enter zoom level' required value="15">
+
+                <table id="marker-table">
+                    <tr>
+                        <th>fly to</th>
+                        <th>Name</th>
+                        <th>Lng</th>
+                        <th>Lat</th>
+                        <th>Description</th>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    
+
+        
+    </div>
+
+</body>
+
+<script>
+        //Mapbox token and stylesheet for Portland map
+        mapboxgl.accessToken = "pk.eyJ1IjoibHVobGlnIiwiYSI6ImNtbmh5azVxZTA3cHQycHBrM2ppaWRidHIifQ.93RfYwf836-wyjee_c4yKQ";
+        var map = new mapboxgl.Map({
+          container: 'map',
+          style: 'mapbox://styles/mapbox/standard-satellite',
+          center: [-122.6750692324665, 45.52003573119981],
+          zoom: 14
+        })
+
+        map.addControl(new mapboxgl.NavigationControl())
+        map.addControl(new mapboxgl.GeolocateControl())
+
+
+        //flies to a point specified by coordinate input
+        function quick_fly(LNG, LAT) {
+            var zoom_level = document.getElementById("zoom-control").value;
+            console.log(`zoom level: ${zoom_level}`);
+
+            map.flyTo({
+                center: [LNG, LAT],
+                zoom: zoom_level
+            });
+        };
+
+        //trail head marker
+        var chepop_con = "<h4>Portland</h4>"
+        chepop_con += "<p>This is Portland</p>"
+
+        var chepop = new mapboxgl.Popup()
+                        .setHTML(chepop_con)
+
+        var CheMarker = new mapboxgl.Marker()
+                            .setLngLat([-122.6750692324665, 45.52003573119981])
+                            .setPopup(chepop)
+                            //.addTo(map);
+
+                    
+        
+        //Toggle marker adding feature
+        const toggle_add_button = document.getElementById("toggle-add");
+        const toggle_text = document.getElementById("toggle-text");
+        var toggle_status = false;
+        
+        function toggle_feature() {
+            if (toggle_status == false) {
+                toggle_status = true;
+                toggle_text.innerHTML = "Add Markers: ON";
+                console.log(toggle_status)
+                return
+            };
+
+            if (toggle_status == true) {
+                toggle_status = false;
+                toggle_text.innerHTML = "Add Markers: OFF";
+                console.log(toggle_status)
+                if (temp) {
+                        temp.remove()
+                    };
+                return
+            }; 
+        }
+
+        toggle_add_button.addEventListener("click", toggle_feature);
+
+        //Create Marker on Click
+//        map.on('click', (e) => {
+//            if (toggle_status == true) {
+//                const coordinates = e.lngLat;
+//                console.log(coordinates);
+//
+//                document.getElementById("Lat").value = coordinates["lat"];
+//                document.getElementById("Lng").value = coordinates["lng"];
+//
+//                var popup = new mapboxgl.Popup()
+//                                .setLngLat(coordinates)
+//                                .setHTML(
+//                                    "<label for='username'>Username:</label> <input type='text' id='username' name='username' placeholder='Enter username' required>"
+//                                   )
+//                                .addTo(map)
+//
+//                new mapboxgl.Marker()
+//                    .setLngLat(coordinates)
+//                    .setPopup(popup)
+//                    .addTo(map);
+//            }
+//        });
+
+
+        //Load coordinates into form and place temp marker
+        var temp = null;
+        map.on('click', (e) => {
+                if (toggle_status == true) {
+                    const coordinates = e.lngLat;
+                    console.log(coordinates);
+
+                    if (temp) {
+                        temp.remove();
+                    };
+
+                    temp = new mapboxgl.Marker ({color: "red"})
+                                .setLngLat(coordinates)
+                                .addTo(map);
+
+
+
+                    document.getElementById("Lat").value = coordinates["lat"];
+                    document.getElementById("Lng").value = coordinates["lng"];
+                };
+            });
+
+        const form_add_button = document.getElementById("add-marker")
+        form_add_button.addEventListener("click", form_marker)
+
+        //Create marker from form
+        function form_marker() {
+            var name = document.getElementById("Name").value;
+            var Lng = document.getElementById("Lng").value;
+            var Lat = document.getElementById("Lat").value;
+            var description = document.getElementById("Description").value;
+            var color = document.getElementsByName("color").value;
+
+            var table = document.getElementById("marker-table")
+
+
+            var popup_content = `<h4>Name: ${name}</h4>`;
+            popup_content += `<p>${description}</p>`
+
+
+            var popup = new mapboxgl.Popup()
+                            .setHTML(popup_content)
+
+
+            var marker = new mapboxgl.Marker()
+                             .setLngLat([Lng, Lat])
+                             .setPopup(popup)
+                             .addTo(map)
+
+
+            table.insertAdjacentHTML("beforeend", `<tr>
+                                                    <td>
+                                                        <button 
+                                                            onclick="quick_fly(${Lng}, ${Lat})"
+                                                        >Fly</button>    
+                                                    </td>
+                                                    <td>${name}</td>
+                                                    <td>${Lng}</td>
+                                                    <td>${Lat}</td>
+                                                    <td>${description}</td>
+                                                   </tr>`)
+
+
+
+
+            console.log(name);
+            console.log(Lng);
+            console.log(Lat);
+            console.log(description);
+            console.log(color);
+        };
+
+</script>
+</html>
